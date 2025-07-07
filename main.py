@@ -23,7 +23,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     import os
-    TOKEN = os.getenv("TELEGRAM_TOKEN")
+    TOKEN = os.getenv("BOT_TOKEN")
     application = ApplicationBuilder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
