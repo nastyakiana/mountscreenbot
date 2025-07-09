@@ -16,10 +16,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Received ticker: {ticker}")
     try:
         result = analyze_ticker(ticker)
-        await update.message.reply_text(result)
-    except Exception as e:
-        logger.error(f"Error analyzing ticker: {e}")
-        await update.message.reply_text("Sorry, something went wrong. Please try again later.")
+
+if "error" in result or "text" not in result:
+    await update.message.reply_text(result.get("text", "Something went wrong."))
+else:
+    if "image" in result:
+        await update.message.reply_photo(photo=result["image"], caption=result["text"], parse_mode="Markdown")
+    else:
+        await update.message.reply_text(result["text"], parse_mode="Markdown")
 
 def main():
     import os
