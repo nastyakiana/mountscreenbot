@@ -1,7 +1,6 @@
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
-
 from utils import analyze_ticker  # ваш анализатор
 
 # Включаем логирование
@@ -14,16 +13,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ticker = update.message.text.strip().upper()
     logger.info(f"Received ticker: {ticker}")
+
     try:
         result = analyze_ticker(ticker)
 
-if "error" in result or "text" not in result:
-    await update.message.reply_text(result.get("text", "Something went wrong."))
-else:
-    if "image" in result:
-        await update.message.reply_photo(photo=result["image"], caption=result["text"], parse_mode="Markdown")
-    else:
-        await update.message.reply_text(result["text"], parse_mode="Markdown")
+        if "error" in result or "text" not in result:
+            await update.message.reply_text(result.get("text", "Something went wrong."))
+        else:
+            if "image" in result:
+                await update.message.reply_photo(photo=result["image"], caption=result["text"], parse_mode="Markdown")
+            else:
+                await update.message.reply_text(result["text"], parse_mode="Markdown")
+
+    except Exception as e:
+        logger.error(f"Error analyzing ticker: {e}")
+        await update.message.reply_text("Sorry, something went wrong. Please try again later.")
 
 def main():
     import os
