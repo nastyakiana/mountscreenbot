@@ -1,7 +1,6 @@
 import yfinance as yf
 import matplotlib.pyplot as plt
 import io
-import base64
 import numpy as np
 
 def analyze_ticker(ticker):
@@ -10,14 +9,15 @@ def analyze_ticker(ticker):
         hist = stock.history(period="1mo")
 
         if hist.empty:
-            return f"⚠️ No data available for {ticker}"
+            return {"text": f"⚠️ No data available for {ticker}"}
 
         # Основные метрики
-        market_cap = stock.info.get("marketCap", 0)
-        price = stock.info.get("currentPrice", 0)
-        avg_volume = stock.info.get("averageVolume", 0)
-        insider_pct = stock.info.get("heldPercentInsiders", 0)
-        institutional_pct = stock.info.get("heldPercentInstitutions", 0)
+        info = stock.info
+        market_cap = info.get("marketCap", 0)
+        price = info.get("currentPrice", 0)
+        avg_volume = info.get("averageVolume", 0)
+        insider_pct = info.get("heldPercentInsiders", 0)
+        institutional_pct = info.get("heldPercentInstitutions", 0)
 
         # Тренд
         first_close = hist["Close"].iloc[0]
@@ -33,8 +33,8 @@ def analyze_ticker(ticker):
         median_vol = np.median(volumes)
         spikes = sum(volumes > 3 * median_vol)
 
-        # График
-        plt.figure(figsize=(6,3))
+        # 📊 График
+        plt.figure(figsize=(6, 3))
         plt.bar(hist.index, hist["Volume"], color="skyblue")
         plt.title(f"{ticker} — Volume (1mo)")
         plt.ylabel("Shares")
@@ -44,11 +44,9 @@ def analyze_ticker(ticker):
         buf = io.BytesIO()
         plt.savefig(buf, format="png")
         buf.seek(0)
-        image_base64 = base64.b64encode(buf.read()).decode("utf-8")
-        buf.close()
 
-        # Итог
-        result = f"""
+        # 📝 Текст анализа
+        result_text = f"""
 📊 *{ticker} Analysis*
 ━━━━━━━━━━━━━━━━━━
 💰 *Market Cap:* ${market_cap / 1e6:.2f}M  
@@ -63,14 +61,12 @@ def analyze_ticker(ticker):
 
 📉 *1mo Trend:* {'🔺' if trend_pct > 0 else '🔻'} {trend_pct:.2f}%  
 💧 *Liquidity:* {'❌ Illiquid' if liquidity == 'Illiquid' else '✅ Liquid'}  
-🧼 *Wash Trading:* ⚠️ {spikes} spikes detected over 3× median volume
+🧼 *Wash Trading:* ⚠️ {spikes} volume spikes > 3× median
 
-✅ *Verdict:* {'⚠️ Too illiquid or low-quality' if liquidity == 'Illiquid' else '✅ Reasonable trading quality'}
-
-🔗 [Yahoo Finance for {ticker}](https://finance.yahoo.com/quote/{ticker})
+🔗 [View on Yahoo Finance](https://finance.yahoo.com/quote/{ticker})
 """
 
-        return result
+        return {"text": result_text.strip(), "image": buf}
 
     except Exception as e:
-        return f"❌ Error analyzing {ticker}: {e}"
+        return {"text": f"❌ Error analyzing {ticker}: {e}"}
